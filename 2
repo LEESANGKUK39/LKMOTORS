@@ -1,0 +1,33 @@
+-- 1. 차량 정보 테이블 (차대번호 VIN 중심)
+CREATE TABLE vehicles (
+    vin TEXT PRIMARY KEY,               -- 차대번호
+    plate_number TEXT NOT NULL,         -- 차량번호
+    model_name TEXT NOT NULL,           -- 모델 (예: Actros, Arocs)
+    owner_name TEXT NOT NULL,           -- 차주명
+    owner_phone TEXT NOT NULL,          -- 연락처 (알림톡 발송용)
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. 정비 오더 테이블 (상태 변화 추적)
+CREATE TABLE work_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    vin TEXT REFERENCES vehicles(vin),
+    status TEXT DEFAULT 'PENDING',      -- PENDING, DIAGNOSING, REPAIRING, COMPLETED
+    description TEXT,                   -- 증상 및 정비 내용
+    mechanic_comment TEXT,              -- 차주에게 전달할 코멘트
+    estimated_time TIMESTAMPTZ,         -- 예상 완료 시간
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. 상태 변경 시 실시간 타임스탬프 업데이트 트리거
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_work_order_timestamp
+BEFORE UPDATE ON work_orders
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
