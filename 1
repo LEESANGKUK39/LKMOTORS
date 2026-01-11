@@ -1,0 +1,15 @@
+# .github/workflows/deploy.yml 예시
+name: Deploy to AWS
+on:
+  push:
+    branches: [ main ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build & Deploy
+        run: |
+          npm install
+          npm run build
+          aws s3 sync ./dist s3://my-benz-truck-service --delete
